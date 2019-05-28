@@ -1,5 +1,5 @@
 ;=========================================================================================!
-PRO Display_validation_2014
+PRO Display_validation_2017_SH
 ;-----------------------------------------------------------------------------------------!
 ; Displays RS-Met model validation with ins-situ swc (Bonfil's data).
 ; Call procedures: 'RS_Met.pro' and 'Read_insitu_swc.pro'
@@ -17,8 +17,8 @@ PRO Display_validation_2014
 ;-----------------------------------------------------------------------------------------!
 ; Call RS-Met model.
 ;-----------------------------------------------------------------------------------------!
-  RS_Met_2014, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
-    , cum_PET, cum_ET, sm_pot, fVC, AET_m, AET_max, AET_min
+  RS_Met, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
+    , cum_PET, cum_ET, sm_pot, fVC
 ;-----------------------------------------------------------------------------------------!
 ; Call read_in-situ data for swc validation.
 ;-----------------------------------------------------------------------------------------!
@@ -28,24 +28,22 @@ PRO Display_validation_2014
 ;-----------------------------------------------------------------------------------------!
 ; Final swc (end of season) from model and in-sityu data.
 ;-----------------------------------------------------------------------------------------!
-  range         = n_elements(meas_dates)
   swc_final_mod = findgen(n_plots) * 0.0
   swc_final_obs = findgen(n_plots) * 0.0
-  swc_model     = findgen(12,no_obs) * 0.0
-  swc_obser     = findgen(12,range) * 0.0
   plot_num      = indgen(n_plots) + 1
-  
+  range         = n_elements(meas_dates)
   for p = 0, n_plots-1 do begin
-    swc_final_mod(p) = (swc(p,no_obs-1)) * 1000.0   ; converted to mm per m2 of soil area.
-    swc_final_obs(p) = (measured_swc(p,20)) * 1000.0 
+;    swc_final_mod(p) = swc(p,no_obs-1) * 1000.0   ; converted to mm per m2 of soil area.
+;    swc_final_obs(p) = measured_swc(p,range-2) * 1000.0
+    swc_final_mod(p) = swc(p,147) * 1000.0   ; converted to mm per m2 of soil area.
+    swc_final_obs(p) = (measured_swc(p,range-12)+measured_swc(p,range-11)) * 1000.0/2.0  
   endfor
-  
   file_name ='mod_obs_swc_' + year + '.csv'
 ;-----------------------------------------------------------------------------------------!
 ; Write csv file and save.
 ;-----------------------------------------------------------------------------------------!
-  write_csv, strcompress(path_out + file_name), plot_num, swc_final_mod $
-    , swc_final_obs, header=['plot no.','swc mod (mm/m2)', 'swc obs (mm/m2)']
+;  write_csv, strcompress(path_out + file_name), plot_num, swc_final_mod $
+;    , swc_final_obs, header=['plot no.','swc mod (mm/m2)', 'swc obs (mm/m2)']
 ;-----------------------------------------------------------------------------------------!
 ; Read and display image of plots.
 ;-----------------------------------------------------------------------------------------!
@@ -117,7 +115,7 @@ PRO Display_validation_2014
     if (y le 0.830860) then begin
       print
       print, p_str, '       ET =', t_ET(p_str-1), '     SWC =', SWC_f(p_str-1) $
-        , ' mm', ',  SWC =', 1000*measured_swc(p_str-1,20),' mm'
+        , ' mm', ',  SWC =', 1000*measured_swc(p_str-1,21),' mm'
       print,'-------------------------------------------------------------------------------'
       WSet, 1
       ;-----------------------------------------------------------------------!
@@ -138,7 +136,7 @@ PRO Display_validation_2014
       ;-----------------------------------------------------------------------!
       ; calculate error on model and measurements.
       ;-----------------------------------------------------------------------!
-      data        = reform(measured_swc(p_str-1,*))
+      data        = reform(measured_swc(p_str-1,*))      ; in-situ data.
       ;-----------------------------------------------------------------------!
       ; Error on measurements (max and min meas. + 0.02 on calibration).
       ;-----------------------------------------------------------------------!
@@ -155,21 +153,21 @@ PRO Display_validation_2014
       ; display ts.
       ;-----------------------------------------------------------------------!
       position1 = [0.125, 0.2, 0.925, 0.925]
-      cgplot, swc(p_str-1,*), ytitle='volumetric water' $ ; swc(p_str-1,*)
+      cgplot, swc(p_str-1,*), ytitle='volumetric water' $
         +' / fVC', yrange=[-0.05,0.5], Position=position1, /NoData $
-        , xtitle='days from 1/11/2013'
+        , xtitle='days from 1/10/2013'
       cgColorFill, [ts_model, Reverse(ts_model), ts_model[0]], $
         [high_error, Reverse(low_error), high_error[0]], $
         Color='pink'
       cgplot, sm_pot(p_str-1,*),  color='orange', linestyle=0 $
         ,thick=1, /overplot
       cgplot, cum_wat(p_str-1,*), color='blue', thick=1.5, /overplot
-      cgplot, arr_selec, data $
+      cgplot, arr_selec, measured_swc(p_str-1,*) $
         , PSym='Filled Circle', symsize=0.8, color='black' $
         , thick=0.5, ERR_YLow=low_yerror, ERR_YHigh=high_yerror $
         , ERR_Color='black', /overplot ;, /overplot;
       cgplot, swc(p_str-1,*), color='red', thick=1.7, /overplot   
-      cgplot, 0.5*fVC(p_str-1,*), color='grn6', linestyle=3 $
+      cgplot, fVC(p_str-1,*)/2.0, color='grn6', linestyle=3 $
         , thick=1, /overplot
       ;-----------------------------------------------------------------------!
       streight_line1 = indgen(no_obs) * 0.0
