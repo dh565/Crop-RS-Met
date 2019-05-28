@@ -1,5 +1,5 @@
 ;=============================================================================================!
-PRO Read_insitu_swc_2014, total_sw, running_days, high_yerror, low_yerror
+PRO Read_insitu_swc, total_sw, running_days, high_yerror, low_yerror
   ;-------------------------------------------------------------------------------------------!
   ; Read in-situ swc data for each field (Data provided by D. Bonfil)
   ; 
