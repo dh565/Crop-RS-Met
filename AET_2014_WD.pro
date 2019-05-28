@@ -1,5 +1,5 @@
 ;=========================================================================================!
-PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
+PRO RS_Met, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
           , cum_PET, cum_ET, sm_pot, fVC
 ;-----------------------------------------------------------------------------------------!
 ; Main program.
@@ -12,7 +12,7 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
 ; Call procedures: 'Calculate_kc_ks.pro'
 ;
 ; David Helman
-; 27th December, 2017.
+; 31th December, 2017.
 ;-----------------------------------------------------------------------------------------!
 ;
 ;-----------------------------------------------------------------------------------------!
@@ -30,18 +30,17 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
 ;-----------------------------------------------------------------------------------------!
 ; Effective water supply (in the root zone after reducing water loss through percolation).  
 ;-----------------------------------------------------------------------------------------!
-  eff_wat   = 0.93; 0.95      (0.0 - 1.0 mean 0% to 100% effective water).
+  eff_wat   = 0.95; 0.95      (0.0 - 1.0 mean 0% to 100% effective water).
 ;-----------------------------------------------------------------------------------------!
-; Maximum rate of interception loss (as %age from rain and as a function of LAI).  
+; Maximum rate of interception loss (as % from rain and as a function of LAI).  
 ;-----------------------------------------------------------------------------------------!
   inter_max = 0.25   ; (0.25 means 25% interception loss at a full canopy coverage).
 ;-----------------------------------------------------------------------------------------!
-; For display... p_test is the plot #
+; Choose plot to display (p_test is plot #).
 ;-----------------------------------------------------------------------------------------!
-  p_test = 1; n_plots-1 ['Wet1','Dry1','Wet2','Dry2','Wet3']
+  p_test = 0; n_plots-1
 ;-----------------------------------------------------------------------------------------!
 ; end INPUT.   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-;-----------------------------------------------------------------------------------------!
 ;-----------------------------------------------------------------------------------------!
 ;
 ;-----------------------------------------------------------------------------------------!
@@ -53,7 +52,8 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
 ;-----------------------------------------------------------------------------------------!
 ; Get year and directory path from @directory_RS_Met.
 ;-----------------------------------------------------------------------------------------!
-  file        = 'Meteo_'+yr+'*.csv'
+  year        = yr
+  file        = 'Meteo_'+year+'*.csv'
   dir         = strcompress(dir_parent + file)
 ;-----------------------------------------------------------------------------------------!
 ; Get data from csv and other general information.
@@ -66,14 +66,14 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
 ;-----------------------------------------------------------------------------------------!
   Gdate_met   = Result.field02      ; date.
   precip      = Result.field04      ; precipitation only (in mm d-1).
-  WS          = Result.field12      ; water supply (precip + irrigation).
+  WS          = Result.field13      ; water supply (precip + irrigation).
   PET_PM      = Result.field16      ; Penmman-Monteith PET.
   PET_buck    = Result.field17      ; PET estimated using a bucket.
 ;-----------------------------------------------------------------------------------------!
 ; Calculate PET, fws and fwa (use Calculate_kc_ks_dry.pro).
 ;-----------------------------------------------------------------------------------------!
-  Calculate_kc_ks,Gdate_met,WS,PET_PM,PET_buck,t_accum,ks_max,kc_max,PET_JH_d,kc_JH_d $
-    ,kc_PM_d,kc_buck_d,ks_JH_d,ks_PM_d,ks_buck_d,n_plots,fVC
+  Calculate_kc_ks,Gdate_met,WS,PET_PM,PET_buck,t_accum,ks_max,kc_max,PET_JH_d $
+    ,kc_JH_d,kc_PM_d,kc_buck_d,ks_JH_d,ks_PM_d,ks_buck_d,n_plots,fVC
 ;-----------------------------------------------------------------------------------------!
 ; Calculate no. of observations (days).
 ;-----------------------------------------------------------------------------------------!
@@ -117,8 +117,8 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
         ;-----------------------------------------------------------------------!
         ; Initial quantities for diagnostics.
         ;-----------------------------------------------------------------------!
-        cum_wat_i = 0.0                  ; for water supplied (rain+irr).
-        cum_ET_i  = 0.0                  ; for water evaporated.
+        cum_wat_i = 0.0                 ; for water supplied (rain+irr).
+        cum_ET_i  = 0.0                 ; for water evaporated.
         swc_i     = eff_wat * WS(0)      ; for swc (remained water in soil).
         swc_imax  = 0.0
         swc_imin  = 0.0
@@ -169,8 +169,8 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
               swc_imin     = swc_imin + (eff_wat * wsupp(p,t) - AET_min(p,t))
               swc_min(p,t) = swc_imin
               ;---------------------------------------------------------------!
-              err_max(p,t) = AET_max(p,t) - AET_m(p,t)
-              err_min(p,t) = AET_m(p,t)   - AET_min(p,t)
+              err_max(p,t) = swc_max(p,t) - swc(p,t)
+              err_min(p,t) = swc(p,t)     - swc_min(p,t)
               ;---------------------------------------------------------------!
               cum_wat_i    = cum_wat_i + wsupp(p,t)
               cum_wat(p,t) = cum_wat_i
@@ -194,8 +194,8 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
                                 + (eff_wat * wsupp(p,no_obs-1) $
                                 - AET_min(p,no_obs-1))          
           ;--------------------------------------------------------------!
-          err_max(p,no_obs-1) = AET_max(p,no_obs-1) - AET_m(p,no_obs-1)
-          err_min(p,no_obs-1) = AET_m(p,no_obs-1)   - AET_min(p,no_obs-1)
+          err_max(p,no_obs-1) = swc_max(p,no_obs-1) - swc(p,no_obs-1)
+          err_min(p,no_obs-1) = swc(p,no_obs-1)     - swc_min(p,no_obs-1)
           ;--------------------------------------------------------------!
           cum_wat(p,no_obs-1) = cum_wat(p,no_obs-2) $
                                 + (eff_wat * wsupp(p,no_obs-1))
@@ -252,8 +252,8 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
   ; Convert to m3/m3.
   ;---------------------------------------------------------------------------------------!
       swc      = swc / 1000.00   
-      err_max  = err_max ;/ 1000.0  
-      err_min  = err_min ;/ 1000.0 
+      err_max  = err_max / 1000.0  
+      err_min  = err_min / 1000.0 
       cum_wat  = cum_wat / 1000.00
       cum_PET  = cum_PET / 1000.00
       cum_ET   = cum_ET  / 1000.00
@@ -265,21 +265,22 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       print, '========================================='
       print, ' Mean SWC = ', SWC_mean, ' mm'
       print, '-----------------------------------------'
-;---------------------------------------------------------------------------------------!
-; save swc for plots as csv file.
-;---------------------------------------------------------------------------------------!
-      file_name = 'swc_'+yr+'.csv'
-      plt1 = reform(swc(0,*))
-      plt2 = reform(swc(1,*))
-      plt3 = reform(swc(2,*))
-      plt4 = reform(swc(3,*))
-      plt5 = reform(swc(4,*))
-;      plt6 = reform(swc(5,*))
-;      plt7 = reform(swc(6,*))
-;      plt8 = reform(swc(7,*))
+      ;---------------------------------------------------------------------------------------!
+      ; save swc for plots as csv file.
+      ;---------------------------------------------------------------------------------------!
+      file_name = 'KKL2_2017.csv'
+      plt1  = reform(swc(0,*))
+      plt2  = reform(swc(1,*))
+      plt3  = reform(swc(2,*))
+      plt4  = reform(swc(3,*))
+      plt5  = reform(swc(4,*))
+      plt6  = reform(swc(5,*))
+      plt7  = reform(swc(6,*))
+      plt8  = reform(swc(7,*))
       
 ;      write_csv, path_out + file_name, plt1, plt2, plt3, plt4 $
-;        , plt5, header=['Wet1','Dry1','Wet2','Dry2','Wet3']
+;        , plt5, plt6, plt7, plt8 $
+;        , header=['fert1','con1','con2','fert2','fert3','cont3','con4','fert4'];,'con3','con4','gr4','sol4']
 
 ;-----------------------------------------------------------------------------------------!
 ; End of model (following is display of results).
@@ -288,13 +289,13 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
 ;-----------------------------------------------------------------------------------------!
 ; Read observed swc data.
 ;-----------------------------------------------------------------------------------------!
-  Read_insitu_swc_2014, measured_swc, measured_dates, high_yerror, low_yerror
+  Read_insitu_swc_2017_KKL, measured_swc, meas_dates, high_yerror, low_yerror
 ;-----------------------------------------------------------------------------------------!
 ;
       ;-----------------------------------------------------------------------!
       ; prepare data for in situ and modeled swc (for linear regression).
       ;-----------------------------------------------------------------------!
-      ts_model    = indgen(no_obs)    
+      ts_model  = indgen(no_obs)    
       ;-----------------------------------------------------------------------!
       ;-----------------------------------------------------------------------!
       ; Legend (all quantities are volumetric as m3/m3).
@@ -309,10 +310,9 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       ;-----------------------------------------------------------------------!
       high_xerror = reform(err_max(p_test-1,*))
       low_xerror  = reform(err_min(p_test-1,*))
-      high_error  = reform(AET_m(p_test-1,*)) + high_xerror  ; for error band.
-      low_error   = reform(AET_m(p_test-1,*)) - low_xerror   ; for error band.
-      range       = n_elements(measured_dates)
-      meas_dates  = measured_dates - 33
+      high_error  = reform(swc(p_test-1,*)) + high_xerror  ; for error band.
+      low_error   = reform(swc(p_test-1,*)) - low_xerror   ; for error band.
+      range       = n_elements(meas_dates)
   ;-----------------------------------------------------------------------------!
   ; Open window.
   ;-----------------------------------------------------------------------------!
@@ -330,22 +330,22 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
   ;-----------------------------------------------------------------------------!
       position1 = [0.125, 0.22, 0.925, 0.925]
       cgControl, Execute=0
-      cgplot, AET_m(p_test-1,*), ytitle='Accumulated water' $
-        +' (m m$\up-2$)', xrange=[0,220], yrange=[0,10] $
+      cgplot, swc(p_test-1,*), ytitle='Accumulated water' $
+        +' (m m$\up-2$)', xrange=[0,210], yrange=[0,0.5] $
         , Position=position1, YStyle=8, /NoData $
-        , xtitle='days from 1/10/2013', charsize=2.0, /AddCmd
+        , xtitle='days from 1/11/2016', charsize=2.0, /AddCmd
       cgColorFill, [ts_model, Reverse(ts_model), ts_model[0]], $
         [high_error, Reverse(low_error), high_error[0]], $
         Color='pink', /WINDOW
-      cgplot, PET,  color='orange', linestyle=0 $
+      cgplot, sm_pot(p_test-1,*),  color='orange', linestyle=0 $
         ,thick=1, /overplot, /AddCmd
-      cgplot, 10*cum_wat(p_test-1,*), color='blue', thick=1.5, /overplot, /AddCmd
-      cgplot, AET_m(p_test-1,*), color='red', thick=1.7, /overplot, /AddCmd 
-;      cgplot, meas_dates, measured_swc(p_test-1,*), PSym='Filled Circle' $
-;        , symsize=1.0, color='black', thick=0.5, ERR_YLow=low_yerror(p_test-1,*) $
-;        , ERR_YHigh=high_yerror(p_test-1,*), ERR_Color='black', /overplot, /AddCmd
+      cgplot, cum_wat(p_test-1,*), color='blue', thick=1.5, /overplot, /AddCmd
+      cgplot, swc(p_test-1,*), color='red', thick=1.7, /overplot, /AddCmd 
+      cgplot, meas_dates, measured_swc, PSym='Filled Circle' $
+        , symsize=1.0, color='black', thick=0.5, ERR_YLow=low_yerror $
+        , ERR_YHigh=high_yerror, ERR_Color='black', /overplot, /AddCmd
       ;-----------------------------------------------------------------------!
-      cgAxis, YAxis=1, YStyle=8, YRange=[0, 1.05], title='f$\downLAI$' $
+      cgAxis, YAxis=1, YStyle=8, YRange=[0, 1.05], title='fCV' $
         , charsize=2.0, color='grn6', /Save, /WINDOW
       cgplot, fVC(p_test-1,*), color='grn6', linestyle=3 $
         , thick=1, /overplot, /AddCmd
@@ -357,16 +357,16 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       ;-----------------------------------------------------------------------!
       ; display annotation.
       ;-----------------------------------------------------------------------!
-;      cgLegend, Title=['swc (obs)'], PSym=[16], symsize=1.3 $
-;        , Location=[0.225, 0.75], Color=['black'], Length=0.0, charsize=2.0, /AddCmd
-      cgLegend, Title=['f$\downLAI$', 'water (rain+irrig)', 'PET', $
-       'AET'], PSym=[0,0,0,0] $
+      cgLegend, Title=['swc (obs)'], PSym=[16], symsize=1.3 $
+        , Location=[0.225, 0.75], Color=['black'], Length=0.0, charsize=2.0, /AddCmd
+      cgLegend, Title=['fVC', 'water (rain+irrig)', 'swc (pot)', $
+       'swc (mod)'], PSym=[0,0,0,0] $
         , Location=[0.15, 0.88], Color=['grn6', 'blue',$
-        'orange','red'], LineStyle=[3,0,0,0], charsize=1.8, /AddCmd
+        'orange','red'], LineStyle=[3,0,0,0], charsize=2.0, /AddCmd
       ;-----------------------------------------------------------------------!
       ;
       ;-----------------------------------------------------------------------!
-      file_name = 'WD_'+yr
+      file_name = 'swc_ts_'
       cgControl, Execute=1, create_pdf = strcompress(path_out + file_name)
   ;-----------------------------------------------------------------------------!
   ; Print image.
@@ -383,7 +383,7 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       ; do linear regression.
       ;-------------------------------------------------------!
       x_data = reform(swc(p_test-1,[meas_dates])) ; obs. data
-      y_data = reform(measured_swc(p_test-1,*))  ; mod. data
+      y_data = reform(measured_swc)  ; mod. data
       ;-------------------------------------------------------!
       x_max_error = high_xerror(meas_dates) ; x-axis error bars.
       x_min_error = low_xerror(meas_dates)  ; x-axis error bars.
@@ -397,12 +397,12 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       position2 = [0.275, 0.2, 0.925, 0.925]
       cgControl, Execute=0
       cgplot, x_data, y_data, XTitle='Modeled (mm$\up3$ mm$\up-3$)' $
-        , YTitle='Observed (mm$\up3$ mm$\up-3$)', xrange=[0.0,0.25] $
-        , yrange=[0.0,0.25], SymColor='black' $
+        , YTitle='Observed (mm$\up3$ mm$\up-3$)', xrange=[0.0,0.15] $
+        , yrange=[0.0,0.15], SymColor='black' $
         , PSym='Open Circle', symsize=2.5, Position=position2 $
-        , charsize=3.0, ERR_YLow=low_yerror(p_test-1,*) $
-        , ERR_YHigh=high_yerror(p_test-1,*), ERR_XLow=x_min_error $
-        , ERR_XHigh=x_max_error, ERR_Color='BLK5', /AddCmd
+        , charsize=3.0, ERR_YLow=low_yerror, YTICKS=5, XTICKS=5 $
+        , ERR_YHigh=high_yerror, ERR_XLow=x_min_error $
+        , ERR_XHigh=x_max_error, ERR_Color='BLK5', /AddCmd ; YTICKS=5
       ;-------------------------------------------------------!
       ; display linear regression and 1:1 line.
       ;-------------------------------------------------------!
@@ -428,29 +428,7 @@ PRO AET_2014_WD, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
       ;-------------------------------------------------------!
       ; end scatterplot.
       ;-------------------------------------------------------!
-      file_name = 'scatterplot_'+yr
+      file_name = 'scatterplot_'
       cgControl, Execute=1, create_pdf = strcompress(path_out + file_name)
-      ;-------------------------------------------------------!
-      ; Calculate RMSE and bias.
-      ;-------------------------------------------------------!
-      diff    = findgen(N_data) * 0.0
-      diff_sq = findgen(N_data) * 0.0
-      
-      for j = 0, N_data-1 do begin
-        diff(j) = x_data(j) - y_data(j)
-        diff_sq(j) = diff(j)^2.0
-      endfor
-      RMSE = sqrt(total(diff_sq, /NaN) / N_data)
-      RMSE_relative = 100 * (RMSE / mean(y_data,/NaN))
-      bias = total(diff, /NaN) / N_data
-      bias_relative = 100 * (bias / mean(y_data,/NaN))
-      print, 'RMSE'
-      print, RMSE, RMSE_relative
-      print
-      print,'============================'
-      print, 'bias'
-      print, bias, bias_relative
-      write_csv, path_out + 'data_m2/WD-D1.csv', x_data, y_data, header=['observed','modeled']
-
 END
 ;=========================================================================================!
