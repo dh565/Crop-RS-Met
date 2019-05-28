@@ -1,4 +1,4 @@
-PRO display_regression_yield_2014
+PRO display_regression_yield
   ;-----------------------------------------------------------------------------------------!
   ; Displays scatterplot of swc vs. grain yield
   ; Call procedures: 'RS_Met.pro' and 'Read_yield.pro'
@@ -18,12 +18,12 @@ PRO display_regression_yield_2014
   ;-----------------------------------------------------------------------------------------!
   ; Call RS-Met model.
   ;-----------------------------------------------------------------------------------------!
-  RS_Met_2014, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
+  RS_Met, n_plots, no_obs, SWC_f, t_ET, swc, err_max, err_min, cum_wat $
     , cum_PET, cum_ET, sm_pot, fVC
   ;-----------------------------------------------------------------------------------------!
   ; Call read_yield for regression.
   ;-----------------------------------------------------------------------------------------!
-  Read_yield_2014, plot_n, yield
+  Read_yield, plot_n, yield
   ;-----------------------------------------------------------------------------------------!
   ;
   ;-----------------------------------------------------------------------------------------!
